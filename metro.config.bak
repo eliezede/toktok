@@ -1,0 +1,11 @@
+const { getDefaultConfig } = require("expo/metro-config");
+const { withNativeWind } = require("nativewind/metro");
+const path = require("path");
+
+// Resolve the ERR_UNSUPPORTED_ESM_URL_SCHEME error on Windows
+// withNativeWind expects a valid URL in the newer Node versions
+const projectRoot = __dirname;
+
+const config = getDefaultConfig(projectRoot);
+
+module.exports = withNativeWind(config, { input: "./global.css" });
