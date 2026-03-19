@@ -12,42 +12,44 @@ export const Colors = {
   light: {
     text: '#11181C',
     background: '#fff',
-    tint: tintColorLight,
+    tint: '#ff9066',
     icon: '#687076',
     tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    tabIconSelected: '#ff9066',
+    surface: '#ffffff',
+    primary: '#ff9066',
+    onPrimary: '#581a00',
+    surfaceContainerLow: '#f7f5f8',
+    surfaceContainerHighest: '#f0f0f0',
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    text: '#ffffff',
+    background: '#0e0e0e',
+    tint: '#ff9066',
+    icon: '#ababab',
+    tabIconDefault: '#ababab',
+    tabIconSelected: '#ff9066',
+    surface: '#0e0e0e',
+    primary: '#ff9066',
+    onPrimary: '#581a00',
+    surfaceContainerLow: '#131313',
+    surfaceContainerHighest: '#262626',
+    surfaceVariant: 'rgba(38, 38, 38, 0.6)',
+    outlineVariant: 'rgba(72, 72, 72, 0.15)',
   },
 };
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+export const Fonts = {
+  jakarta: {
+    regular: 'PlusJakartaSans-Regular',
+    medium: 'PlusJakartaSans-Medium',
+    semiBold: 'PlusJakartaSans-SemiBold',
+    bold: 'PlusJakartaSans-Bold',
   },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-  },
-});
+  manrope: {
+    regular: 'Manrope-Regular',
+    medium: 'Manrope-Medium',
+    semiBold: 'Manrope-SemiBold',
+    bold: 'Manrope-Bold',
+  }
+};

@@ -6,32 +6,212 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { doc, setDoc } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { db, storage } from '../../firebase/config';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState, useEffect } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View, StatusBar, ActivityIndicator } from 'react-native';
+import ImportReviewScreen from '../../components/ImportReviewScreen';
+import { db, storage, auth } from '../../firebase/config';
+import { ListingImportService } from '../../services/listingImport/listingImportService';
+import { SocialAuthService, SocialPlatform } from '../../services/listingImport/socialAuthService';
+import SocialLoginModal from '../../components/post/SocialLoginModal';
+import { ListingDraft, PropertyListing } from '../../types';
+import { usePropertyManagement } from '@/hooks/usePropertyManagement';
+import { CustomModal } from '@/components/ui/CustomModal';
+import { FormInput, SelectChip } from '@/components/property/PropertyFormElements';
+import { PostStepImport } from '@/components/post/PostStepImport';
+import { PostStepVideo } from '@/components/post/PostStepVideo';
+import { PostStepBasicInfo } from '@/components/post/PostStepBasicInfo';
+import { PostStepSpecs } from '@/components/post/PostStepSpecs';
+import { PostStepLocation } from '@/components/post/PostStepLocation';
+import { PostStepPhotos } from '@/components/post/PostStepPhotos';
+import { PropertyActionService } from '@/services/property/propertyActionService';
+
 
 export default function PostScreen() {
     const { profile } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState(1);
+    const [step, setStep] = useState(0);
     const totalSteps = 5;
+    const {
+        modalVisible,
+        setModalVisible,
+        modalConfig,
+        showModal
+    } = usePropertyManagement();
+
+    // Import State
+    const [importUrl, setImportUrl] = useState('');
+    const [isImporting, setIsImporting] = useState(false);
+    const [draft, setDraft] = useState<ListingDraft | null>(null);
+    const [showReview, setShowReview] = useState(false);
+
+    // Social Auth State
+    const [socialModalVisible, setSocialModalVisible] = useState(false);
+    const [socialPlatform, setSocialPlatform] = useState<SocialPlatform>('instagram');
+    const [hasInstagramSession, setHasInstagramSession] = useState(false);
+
+    useEffect(() => {
+        const checkSessions = async () => {
+            const hasInsta = await SocialAuthService.hasSession('instagram');
+            setHasInstagramSession(hasInsta);
+        };
+        checkSessions();
+    }, []);
 
     // Form fields
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState('');
-    const [operation, setOperation] = useState<'sale' | 'rent'>('sale');
+    const [operation, setOperation] = useState<'sale' | 'rent' | 'seasonal'>('sale');
     const [propertyType, setPropertyType] = useState<PropertyType>('apartment');
     const [bedrooms, setBedrooms] = useState('');
+    const [suites, setSuites] = useState('');
     const [bathrooms, setBathrooms] = useState('');
+    const [parkingSpaces, setParkingSpaces] = useState('');
     const [squareMeters, setSquareMeters] = useState('');
+    const [condoFee, setCondoFee] = useState('');
+    const [iptu, setIptu] = useState('');
+    const [floor, setFloor] = useState('');
+    const [yearBuilt, setYearBuilt] = useState('');
     const [city, setCity] = useState('');
     const [neighborhood, setNeighborhood] = useState('');
     const [address, setAddress] = useState('');
+    const [postalCode, setPostalCode] = useState('');
+    const [amenities, setAmenities] = useState<string[]>([]);
 
     // Media
     const [videoUri, setVideoUri] = useState<string | null>(null);
     const [photos, setPhotos] = useState<string[]>([]);
+    
+    // Extra Flags
+    const [furnished, setFurnished] = useState(false);
+    const [petFriendly, setPetFriendly] = useState(false);
+    const [acceptsFinancing, setAcceptsFinancing] = useState(false);
+    const [acceptsExchange, setAcceptsExchange] = useState(false);
+
+    const resetForm = () => {
+        setTitle('');
+        setDescription('');
+        setPrice('');
+        setOperation('sale');
+        setPropertyType('apartment');
+        setBedrooms('');
+        setSuites('');
+        setBathrooms('');
+        setSquareMeters('');
+        setCondoFee('');
+        setIptu('');
+        setCity('');
+        setNeighborhood('');
+        setAddress('');
+        setPostalCode('');
+        setAmenities([]);
+        setVideoUri(null);
+        setPhotos([]);
+        setFurnished(false);
+        setPetFriendly(false);
+        setAcceptsFinancing(false);
+        setAcceptsExchange(false);
+        setFloor('');
+        setYearBuilt('');
+        setParkingSpaces('');
+    };
+
+    const isValidUrl = (url: string) => {
+        try {
+            return url.length > 5 && url.includes('.');
+        } catch (_) {
+            return false;
+        }
+    };
+
+    const handleImport = async (manualHtml?: string) => {
+        if (!isValidUrl(importUrl)) return;
+        setLoading(true);
+        setIsImporting(true);
+        if (!manualHtml) resetForm(); // Only reset if it's a fresh import, not a retry with HTML
+        
+        try {
+            const response = await ListingImportService.importFromUrl(importUrl, manualHtml);
+            if (response.success) {
+                const newDraft = ListingImportService.buildDraftFromResponse(response);
+                ListingImportService.normalizeDraftInPlace(newDraft);
+                
+                // Check if specialized login is needed
+                const needsLogin = response.data?.metadata.importWarnings.some(w => w.includes('bloqueou') || w.includes('login'));
+                const isSocial = response.data?.metadata.sourcePlatform !== 'generic';
+                
+                if (needsLogin && isSocial && !hasInstagramSession) {
+                    console.log("[PostScreen] Link requires login, showing SocialLoginModal transition.");
+                    setSocialPlatform(response.data?.metadata.sourcePlatform as SocialPlatform);
+                    showModal({
+                        title: 'Login Necessário',
+                        message: 'Este link parece ser privado ou está bloqueado. Deseja fazer login no Instagram para tentar importar?',
+                        type: 'info',
+                        onConfirm: () => {
+                            setModalVisible(false);
+                            // Add a small delay to avoid modal conflict on some devices
+                            setTimeout(() => {
+                                setSocialModalVisible(true);
+                            }, 400);
+                        }
+                    });
+                    return;
+                }
+
+                setDraft(newDraft);
+                setShowReview(true);
+            } else {
+                showModal({
+                    title: 'Falha na Importação',
+                    message: response.error?.message || 'Não foi possível importar o anúncio do link fornecido.',
+                    type: 'error'
+                });
+            }
+        } catch (error: any) {
+            showModal({
+                title: 'Erro no Processo',
+                message: error.message || 'Ocorreu um erro inesperado durante a importação.',
+                type: 'error'
+            });
+        } finally {
+            setLoading(false);
+            setIsImporting(false);
+        }
+    };
+
+    const handleReviewComplete = (updatedFields: Partial<PropertyListing>) => {
+        // Prefill states from reviewed fields
+        if (updatedFields.listingTitle) setTitle(updatedFields.listingTitle);
+        if (updatedFields.descriptionLong) setDescription(updatedFields.descriptionLong);
+        if (updatedFields.price !== undefined) setPrice(updatedFields.price.toString());
+        if (updatedFields.listingType) setOperation(updatedFields.listingType as 'sale' | 'rent');
+        if (updatedFields.propertyType) setPropertyType(updatedFields.propertyType);
+        if (updatedFields.bedrooms !== undefined) setBedrooms(updatedFields.bedrooms.toString());
+        if (updatedFields.suites !== undefined) setSuites(updatedFields.suites.toString());
+        if (updatedFields.bathrooms !== undefined) setBathrooms(updatedFields.bathrooms.toString());
+        if (updatedFields.areaValue !== undefined) setSquareMeters(updatedFields.areaValue.toString());
+        if (updatedFields.condoFee !== undefined) setCondoFee(updatedFields.condoFee.toString());
+        if (updatedFields.iptu !== undefined) setIptu(updatedFields.iptu.toString());
+        if (updatedFields.city) setCity(updatedFields.city);
+        if (updatedFields.neighborhood) setNeighborhood(updatedFields.neighborhood);
+        if (updatedFields.addressLine1) setAddress(updatedFields.addressLine1);
+
+        // Photos if imported
+        if (updatedFields.imageUrls && updatedFields.imageUrls.length > 0) {
+            setPhotos(updatedFields.imageUrls);
+        }
+
+        // Video if imported
+        if (updatedFields.videoUrl) {
+            setVideoUri(updatedFields.videoUrl);
+        }
+
+        setShowReview(false);
+        // If we have a video, skip the video pick step (1) and go to step 2
+        setStep(updatedFields.videoUrl ? 2 : 1);
+    };
 
     const pickVideo = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -61,62 +241,73 @@ export default function PostScreen() {
         }
     };
 
-    const uploadMediaAsync = async (uri: string, path: string): Promise<string> => {
-        const response = await fetch(uri);
-        const blob = await response.blob();
-        const storageRef = ref(storage, path);
-        await uploadBytes(storageRef, blob);
-        return await getDownloadURL(storageRef);
-    };
 
     const handlePost = async () => {
-        if (!title || !price || !city || !videoUri || !profile) {
-            Alert.alert('Missing Information', 'Please complete all required fields.');
+        const userId = auth.currentUser?.uid;
+        if (!title || !price || !city || !videoUri || !userId) {
+            showModal({
+                title: 'Info Faltando',
+                message: 'Por favor, complete todos os campos e adicione o vídeo para publicar.',
+                type: 'warning'
+            });
             return;
         }
 
         setLoading(true);
         try {
-            const propertyId = `prop_${Date.now()}`;
-
-            // Upload video
-            const videoUrl = await uploadMediaAsync(videoUri, `properties/${propertyId}/video.mp4`);
-
-            // Upload photos if any
-            const photoUrls = await Promise.all(
-                photos.map((uri, idx) => uploadMediaAsync(uri, `properties/${propertyId}/photo_${idx}.jpg`))
-            );
-
-            // Save to Firestore
-            await setDoc(doc(db, 'properties', propertyId), {
-                id: propertyId,
-                title,
-                description,
+            const propertyData: any = {
+                listingTitle: title,
+                descriptionLong: description,
+                descriptionShort: description.slice(0, 100),
                 price: parseFloat(price.replace(/[^0-9.]/g, '')),
-                operation,
+                currency: 'BRL',
+                listingType: operation,
                 propertyType,
                 bedrooms: parseInt(bedrooms) || 0,
+                suites: parseInt(suites) || 0,
                 bathrooms: parseInt(bathrooms) || 0,
-                squareMeters: parseInt(squareMeters) || 0,
+                parkingSpaces: parseInt(parkingSpaces) || 0,
+                areaValue: parseInt(squareMeters) || 0,
+                areaUnit: 'sqm',
+                condoFee: parseFloat(condoFee.replace(/[^0-9.]/g, '')) || 0,
+                iptu: parseFloat(iptu.replace(/[^0-9.]/g, '')) || 0,
+                floor,
+                yearBuilt: parseInt(yearBuilt) || 0,
                 city,
                 neighborhood,
-                address,
-                contactPhone: profile.phone || '',
-                contactWhatsApp: profile.whatsapp || profile.phone || '',
-                videoUrl,
-                imageUrls: photoUrls,
+                addressLine1: address,
+                postalCode,
+                country: 'Brasil',
+                contactPhone: profile?.phone || '',
+                contactWhatsApp: profile?.whatsapp || profile?.phone || '',
                 features: [],
-                createdBy: profile.id,
-                createdAt: Date.now(),
-                status: 'active',
+                amenities,
+                furnished,
+                petFriendly,
+                acceptsFinancing,
+                acceptsExchange,
                 isPromoted: false,
+            };
+
+            await PropertyActionService.createListing(userId, propertyData, videoUri, photos);
+
+            showModal({
+                title: 'Publicado!',
+                message: 'O seu imóvel já está ativo e visível para todos no TokTok!',
+                type: 'success',
+                onConfirm: () => {
+                    setModalVisible(false);
+                    router.replace('/(tabs)');
+                }
             });
 
-            Alert.alert('Success', 'Your property is now live on TokTok!');
-            router.replace('/(tabs)');
-
         } catch (error: any) {
-            Alert.alert('Error', error.message);
+            console.error("[PostScreen] Error during post:", error);
+            showModal({
+                title: 'Erro ao Publicar',
+                message: error.message || 'Não foi possível completar a publicação do imóvel.',
+                type: 'error'
+            });
         } finally {
             setLoading(false);
         }
@@ -124,227 +315,208 @@ export default function PostScreen() {
 
     if (profile?.role === 'buyer') {
         return (
-            <View className="flex-1 items-center justify-center p-8 bg-white">
-                <View className="w-24 h-24 bg-primary/10 rounded-full items-center justify-center mb-6">
-                    <Ionicons name="lock-closed" size={48} color="#8B5CF6" />
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, backgroundColor: '#0e0e0e' }}>
+                <View style={{ width: 96, height: 96, backgroundColor: 'rgba(255, 144, 102, 0.1)', borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+                    <Ionicons name="lock-closed" size={48} color="#ff9066" />
                 </View>
-                <Text className="text-2xl font-black text-center text-gray-900 mb-2">Exclusive for Pros</Text>
-                <Text className="text-gray-500 text-center text-base leading-6">
-                    Only verified Agents and Agencies can list properties on TokTok.
+                <Text style={{ fontSize: 28, fontFamily: 'PlusJakartaSans-Bold', color: 'white', textAlign: 'center' }}>Exclusivo para Pros</Text>
+                <Text style={{ color: 'rgba(255, 255, 255, 0.5)', textAlign: 'center', marginTop: 16, fontFamily: 'PlusJakartaSans-Regular', fontSize: 16, lineHeight: 24 }}>
+                    Apenas Agentes e Imobiliárias verificadas podem anunciar imóveis no TokTok.
                 </Text>
                 <TouchableOpacity
-                    className="mt-8 bg-primary w-full py-4 rounded-2xl shadow-lg shadow-primary/30"
+                    style={{ marginTop: 40, backgroundColor: '#ff9066', width: '100%', borderRadius: 20, shadowColor: '#ff9066', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12 }}
                     onPress={() => router.push('/(tabs)/profile')}
                 >
-                    <Text className="text-white font-black text-center text-lg">Become a Pro Agent</Text>
+                    <Text style={{ color: 'white', fontFamily: 'PlusJakartaSans-Bold', textAlign: 'center', fontSize: 18, textTransform: 'uppercase', letterSpacing: 1.5, paddingVertical: 18 }}>Tornar-se Pro</Text>
                 </TouchableOpacity>
             </View>
         );
     }
 
-    const FormInput = ({ label, placeholder, value, onChangeText, keyboardType = 'default', multiline = false, numberOfLines = 1, icon }: any) => (
-        <View className="mb-5">
-            <Text className="text-gray-900 font-bold mb-2 ml-1">{label}</Text>
-            <View className={`flex-row items-center bg-gray-50 border border-gray-200 rounded-2xl px-4 ${multiline ? 'pt-3 pb-3' : 'h-14'}`}>
-                {icon && <Ionicons name={icon} size={20} color="#6B7280" style={{ marginRight: 12 }} />}
-                <TextInput
-                    className="flex-1 text-gray-900 text-base"
-                    placeholder={placeholder}
-                    placeholderTextColor="#9CA3AF"
-                    value={value}
-                    onChangeText={onChangeText}
-                    keyboardType={keyboardType}
-                    multiline={multiline}
-                    numberOfLines={numberOfLines}
-                    textAlignVertical={multiline ? 'top' : 'center'}
-                />
-            </View>
-        </View>
-    );
-
-    const SelectChip = ({ selected, onSelect, label }: any) => (
-        <TouchableOpacity
-            onPress={onSelect}
-            className={`px-6 py-3 rounded-full mr-2 border-2 ${selected ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}
-        >
-            <Text className={`font-black uppercase text-xs tracking-widest ${selected ? 'text-white' : 'text-gray-500'}`}>
-                {label}
-            </Text>
-        </TouchableOpacity>
-    );
-
     const renderStep = () => {
         switch (step) {
+            case 0:
+                return (
+                    <PostStepImport
+                        importUrl={importUrl}
+                        setImportUrl={setImportUrl}
+                        onImport={handleImport}
+                        onManualEntry={() => setStep(1)}
+                        onSocialLogin={(platform) => {
+                            setSocialPlatform(platform);
+                            setSocialModalVisible(true);
+                        }}
+                        hasSocialSession={hasInstagramSession}
+                        isImporting={isImporting}
+                        isValidUrl={isValidUrl}
+                    />
+                );
             case 1:
                 return (
-                    <View>
-                        <Text className="text-2xl font-black text-gray-900 mb-4 tracking-tighter uppercase">Step 1: The Video</Text>
-                        <Text className="text-gray-500 mb-8 leading-5">Every TokTok listing starts with a video tour. Upload a 9:16 vertical video.</Text>
-
-                        <TouchableOpacity
-                            className="w-full aspect-[9/16] bg-gray-50 rounded-3xl items-center justify-center border-2 border-dashed border-gray-200 mb-8 overflow-hidden"
-                            onPress={pickVideo}
-                        >
-                            {videoUri ? (
-                                <View className="w-full h-full items-center justify-center bg-gray-900">
-                                    <Ionicons name="checkmark-circle" size={80} color="#10B981" />
-                                    <Text className="text-white font-black text-xl mt-4">Video Selected</Text>
-                                    <View className="mt-6 bg-white/20 px-6 py-2 rounded-full">
-                                        <Text className="text-white font-bold uppercase text-[10px] tracking-widest">Tap to change</Text>
-                                    </View>
-                                </View>
-                            ) : (
-                                <View className="items-center px-12">
-                                    <View className="w-20 h-20 bg-primary rounded-full items-center justify-center mb-6 shadow-lg shadow-primary/50">
-                                        <Ionicons name="videocam" size={36} color="white" />
-                                    </View>
-                                    <Text className="text-xl font-black text-gray-900 text-center mb-2">Upload Video Tour</Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-
-                        {videoUri && (
-                            <TouchableOpacity className="bg-primary py-5 rounded-2xl items-center" onPress={() => setStep(2)}>
-                                <Text className="text-white font-black text-lg uppercase tracking-widest">Continue</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
+                    <PostStepVideo
+                        videoUri={videoUri}
+                        onPickVideo={pickVideo}
+                        onContinue={() => setStep(2)}
+                    />
                 );
             case 2:
                 return (
-                    <View>
-                        <Text className="text-2xl font-black text-gray-900 mb-4 tracking-tighter uppercase">Step 2: Basic Info</Text>
-                        <View className="mb-6">
-                            <Text className="text-gray-900 font-bold mb-3 uppercase text-xs tracking-widest">Operation Type</Text>
-                            <View className="flex-row">
-                                <SelectChip selected={operation === 'sale'} onSelect={() => setOperation('sale')} label="Selling" />
-                                <SelectChip selected={operation === 'rent'} onSelect={() => setOperation('rent')} label="Rent" />
-                            </View>
-                        </View>
-                        <FormInput label="Listing Title" placeholder="e.g. Luxury Condo in Brickell" value={title} onChangeText={setTitle} icon="text" />
-                        <FormInput label="Description" placeholder="Description of the property" value={description} onChangeText={setDescription} multiline numberOfLines={4} icon="reader" />
-                        <FormInput label="Price ($)" placeholder="500,000" value={price} onChangeText={setPrice} keyboardType="numeric" icon="cash" />
-
-                        <View className="flex-row gap-4 mt-8">
-                            <TouchableOpacity className="flex-1 bg-gray-100 py-5 rounded-2xl items-center" onPress={() => setStep(1)}>
-                                <Text className="text-gray-500 font-black uppercase text-xs tracking-widest">Back</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity className="flex-[2] bg-primary py-5 rounded-2xl items-center" onPress={() => setStep(3)}>
-                                <Text className="text-white font-black text-lg uppercase tracking-widest">Next Step</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                    <PostStepBasicInfo
+                        operation={operation}
+                        setOperation={setOperation}
+                        title={title}
+                        setTitle={setTitle}
+                        description={description}
+                        setDescription={setDescription}
+                        price={price}
+                        setPrice={setPrice}
+                        condoFee={condoFee}
+                        setCondoFee={setCondoFee}
+                        iptu={iptu}
+                        setIptu={setIptu}
+                        onBack={() => setStep(1)}
+                        onNext={() => setStep(3)}
+                    />
                 );
             case 3:
                 return (
-                    <View>
-                        <Text className="text-2xl font-black text-gray-900 mb-4 tracking-tighter uppercase">Step 3: Specifications</Text>
-                        <Text className="text-gray-900 font-bold mb-3 uppercase text-xs tracking-widest">Property Category</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-8 overflow-visible">
-                            <SelectChip selected={propertyType === 'apartment'} onSelect={() => setPropertyType('apartment')} label="Apartment" />
-                            <SelectChip selected={propertyType === 'home'} onSelect={() => setPropertyType('home')} label="House" />
-                            <SelectChip selected={propertyType === 'villa'} onSelect={() => setPropertyType('villa')} label="Villa" />
-                            <SelectChip selected={propertyType === 'land'} onSelect={() => setPropertyType('land')} label="Land" />
-                        </ScrollView>
-
-                        <View className="flex-row gap-4">
-                            <View className="flex-1">
-                                <FormInput label="Bedrooms" placeholder="2" value={bedrooms} onChangeText={setBedrooms} keyboardType="numeric" icon="bed" />
-                            </View>
-                            <View className="flex-1">
-                                <FormInput label="Bathrooms" placeholder="1" value={bathrooms} onChangeText={setBathrooms} keyboardType="numeric" icon="water" />
-                            </View>
-                        </View>
-                        <FormInput label="Area (m²)" placeholder="85" value={squareMeters} onChangeText={setSquareMeters} keyboardType="numeric" icon="expand" />
-
-                        <View className="flex-row gap-4 mt-8">
-                            <TouchableOpacity className="flex-1 bg-gray-100 py-5 rounded-2xl items-center" onPress={() => setStep(2)}>
-                                <Text className="text-gray-500 font-black uppercase text-xs tracking-widest">Back</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity className="flex-[2] bg-primary py-5 rounded-2xl items-center" onPress={() => setStep(4)}>
-                                <Text className="text-white font-black text-lg uppercase tracking-widest">Location</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                    <PostStepSpecs
+                        propertyType={propertyType}
+                        setPropertyType={setPropertyType}
+                        bedrooms={bedrooms}
+                        setBedrooms={setBedrooms}
+                        suites={suites}
+                        setSuites={setSuites}
+                        bathrooms={bathrooms}
+                        setBathrooms={setBathrooms}
+                        squareMeters={squareMeters}
+                        setSquareMeters={setSquareMeters}
+                        furnished={furnished}
+                        setFurnished={setFurnished}
+                        petFriendly={petFriendly}
+                        setPetFriendly={setPetFriendly}
+                        parkingSpaces={parkingSpaces}
+                        setParkingSpaces={setParkingSpaces}
+                        acceptsFinancing={acceptsFinancing}
+                        setAcceptsFinancing={setAcceptsFinancing}
+                        acceptsExchange={acceptsExchange}
+                        setAcceptsExchange={setAcceptsExchange}
+                        floor={floor}
+                        setFloor={setFloor}
+                        yearBuilt={yearBuilt}
+                        setYearBuilt={setYearBuilt}
+                        amenities={amenities}
+                        setAmenities={setAmenities}
+                        onBack={() => setStep(2)}
+                        onNext={() => setStep(4)}
+                    />
                 );
             case 4:
                 return (
-                    <View>
-                        <Text className="text-2xl font-black text-gray-900 mb-4 tracking-tighter uppercase">Step 4: Location</Text>
-                        <FormInput label="City" placeholder="Miami" value={city} onChangeText={setCity} icon="business" />
-                        <FormInput label="Neighborhood" placeholder="Brickell" value={neighborhood} onChangeText={setNeighborhood} icon="map" />
-                        <FormInput label="Full Address" placeholder="123 Ocean Drive" value={address} onChangeText={setAddress} icon="pin" />
-
-                        <View className="flex-row gap-4 mt-8">
-                            <TouchableOpacity className="flex-1 bg-gray-100 py-5 rounded-2xl items-center" onPress={() => setStep(3)}>
-                                <Text className="text-gray-500 font-black uppercase text-xs tracking-widest">Back</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity className="flex-[2] bg-primary py-5 rounded-2xl items-center" onPress={() => setStep(5)}>
-                                <Text className="text-white font-black text-lg uppercase tracking-widest">Almost There</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                    <PostStepLocation
+                        city={city}
+                        setCity={setCity}
+                        neighborhood={neighborhood}
+                        setNeighborhood={setNeighborhood}
+                        address={address}
+                        setAddress={setAddress}
+                        postalCode={postalCode}
+                        setPostalCode={setPostalCode}
+                        onBack={() => setStep(3)}
+                        onNext={() => setStep(5)}
+                    />
                 );
             case 5:
                 return (
-                    <View>
-                        <Text className="text-2xl font-black text-gray-900 mb-4 tracking-tighter uppercase">Step 5: Preview & Photos</Text>
-                        <Text className="text-gray-500 mb-8 leading-5">Add up to 10 photos and your floor plan to complete the listing.</Text>
-
-                        <View className="flex-row flex-wrap gap-2 mb-8">
-                            {photos.map((uri, i) => (
-                                <View key={i} className="w-[31%] aspect-square bg-gray-100 rounded-2xl overflow-hidden">
-                                    <Image source={{ uri }} className="w-full h-full" />
-                                </View>
-                            ))}
-                            {photos.length < 10 && (
-                                <TouchableOpacity
-                                    className="w-[31%] aspect-square bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 items-center justify-center"
-                                    onPress={pickPhotos}
-                                >
-                                    <Ionicons name="add" size={32} color="#D1D5DB" />
-                                </TouchableOpacity>
-                            )}
-                        </View>
-
-                        <TouchableOpacity
-                            className={`w-full py-5 rounded-2xl items-center mb-6 shadow-xl ${loading ? 'bg-gray-400' : 'bg-green-500 shadow-green-500/30'}`}
-                            onPress={handlePost}
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <Text className="text-white font-black text-lg">UPLOADING...</Text>
-                            ) : (
-                                <Text className="text-white font-black text-lg uppercase tracking-widest">Publish Listing</Text>
-                            )}
-                        </TouchableOpacity>
-
-                        <TouchableOpacity className="w-full py-4 items-center" onPress={() => setStep(4)} disabled={loading}>
-                            <Text className="text-gray-400 font-bold uppercase text-xs tracking-widest">Go Back</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <PostStepPhotos
+                        photos={photos}
+                        onPickPhotos={pickPhotos}
+                        onPost={handlePost}
+                        onBack={() => setStep(4)}
+                        loading={loading}
+                    />
                 );
+            default:
+                return null;
         }
     };
 
+    if (showReview && draft) {
+        return (
+            <ImportReviewScreen
+                draft={draft}
+                onContinue={handleReviewComplete}
+                onCancel={() => setShowReview(false)}
+                onReImport={() => {
+                    setShowReview(false);
+                    setImportUrl('');
+                }}
+            />
+        );
+    }
+
     return (
-        <View className="flex-1 bg-white">
-            <SafeAreaView />
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
-                <View className="flex-row items-center px-6 pt-10 pb-4">
-                    <View className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden flex-row">
-                        <View
-                            style={{ width: `${(step / totalSteps) * 100}%` }}
-                            className="h-full bg-primary"
-                        />
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0e0e0e' }}>
+            <StatusBar barStyle="light-content" />
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <TouchableOpacity onPress={step > 0 ? () => setStep(step - 1) : () => router.back()}>
+                            <Ionicons name={step > 0 ? "arrow-back" : "close"} size={24} color="white" />
+                        </TouchableOpacity>
+                        <View style={{ alignItems: 'center' }}>
+                            <Text style={{ fontFamily: 'PlusJakartaSans-Bold', color: '#ff9066', textTransform: 'uppercase', fontSize: 9, letterSpacing: 2 }}>
+                                {step === 0 ? "Novo Anúncio" : "Criar Anúncio"}
+                            </Text>
+                            {step > 0 && (
+                                <Text style={{ fontSize: 9, color: 'rgba(255, 255, 255, 0.3)', fontFamily: 'PlusJakartaSans-Bold', textTransform: 'uppercase', letterSpacing: 1, marginTop: 1 }}>Passo {step} de {totalSteps}</Text>
+                            )}
+                        </View>
+                        <View style={{ width: 24 }} />
                     </View>
-                    <Text className="ml-4 font-black text-gray-900 uppercase text-xs tracking-widest">{step}/{totalSteps}</Text>
+
+                    {step > 0 && (
+                        <View style={{ height: 3, width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 2, overflow: 'hidden' }}>
+                            <View
+                                style={{ width: `${(step / totalSteps) * 100}%`, height: '100%', backgroundColor: '#ff9066' }}
+                            />
+                        </View>
+                    )}
                 </View>
 
-                <ScrollView className="flex-1 px-6 pt-4" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+                <ScrollView
+                    style={{ flex: 1, paddingHorizontal: 20, paddingTop: 8 }}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 60 }}
+                >
                     {renderStep()}
                 </ScrollView>
             </KeyboardAvoidingView>
-        </View>
+
+            {/* Premium Modals */}
+            <CustomModal
+                visible={modalVisible}
+                onClose={() => setModalVisible(false)}
+                {...modalConfig}
+            />
+            <SocialLoginModal
+                visible={socialModalVisible}
+                platform={socialPlatform}
+                targetUrl={importUrl}
+                onClose={() => setSocialModalVisible(false)}
+                onSuccess={(manualHtml) => {
+                    console.log("[PostScreen] Social login successful, retrying import with extracted HTML.");
+                    setSocialModalVisible(false);
+                    setHasInstagramSession(true);
+                    // Delay retry to let modal close completely
+                    setTimeout(() => {
+                        handleImport(manualHtml);
+                    }, 600);
+                }}
+            />
+        </SafeAreaView>
     );
 }

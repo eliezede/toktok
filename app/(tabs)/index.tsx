@@ -1,30 +1,81 @@
 import FeedItem from '@/components/FeedItem';
-import PropertyBottomSheet from '@/components/PropertyBottomSheet';
+import PropertyBottomSheet from '@/components/sheets/PropertyBottomSheet';
+import { PropertyQueryService } from '@/services/property/propertyQueryService';
 import { PropertyListing } from '@/types';
-import { MOCK_PROPERTIES } from '@/utils/mockData';
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useRef, useState } from 'react';
-import { Dimensions, FlatList, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View, ViewToken } from 'react-native';
+import { useFocusEffect, router } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Dimensions, FlatList, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View, ViewToken, Animated } from 'react-native';
+import { useAuth } from '@/hooks/useAuth';
 
 const { height: WINDOW_HEIGHT, width: WINDOW_WIDTH } = Dimensions.get('window');
 
+import { useFeed } from '@/context/FeedContext';
+
 export default function HomeScreen() {
+  const { setActiveProperty, bottomSheetRef } = useFeed();
+  const { profile } = useAuth();
+  const [listings, setListings] = useState<PropertyListing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [isScreenFocused, setIsScreenFocused] = useState(true);
   const [activeTab, setActiveTab] = useState<'Following' | 'For You'>('For You');
-  const [selectedProperty, setSelectedProperty] = useState<PropertyListing | null>(null);
 
-  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  const headerOpacity = useRef(new Animated.Value(1)).current;
+
+  const isPro = profile?.role === 'agent' || profile?.role === 'agency';
+  const isBuyer = profile?.role === 'buyer';
+
+  const showHeader = () => {
+    Animated.timing(headerOpacity, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const hideHeader = () => {
+    Animated.timing(headerOpacity, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const fetchListings = async () => {
+    setLoading(true);
+    const data = await PropertyQueryService.getListings();
+    console.log(`[HomeScreen] Fetched ${data.length} listings`);
+    setListings(data);
+    if (data.length > 0) {
+      setActiveProperty(data[0]);
+    }
+    setLoading(false);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    const data = await PropertyQueryService.getListings();
+    setListings(data);
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    fetchListings();
+  }, []);
 
   const handleFichaPress = useCallback((property: PropertyListing) => {
-    setSelectedProperty(property);
-    bottomSheetModalRef.current?.present();
-  }, []);
+    setActiveProperty(property);
+    bottomSheetRef.current?.present();
+  }, [setActiveProperty, bottomSheetRef]);
 
   useFocusEffect(
     useCallback(() => {
       setIsScreenFocused(true);
+      showHeader();
       return () => {
         setIsScreenFocused(false);
       };
@@ -37,14 +88,28 @@ export default function HomeScreen() {
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0) {
-      setActiveVideoIndex(viewableItems[0].index || 0);
+      const index = viewableItems[0].index || 0;
+      setActiveVideoIndex(index);
+      if (listings[index]) {
+        setActiveProperty(listings[index]);
+      }
     }
   }).current;
 
+  if (loading && !refreshing) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#ff9066" />
+        <Text style={{ color: 'white', marginTop: 20, fontFamily: 'PlusJakartaSans-Bold', letterSpacing: 2, fontSize: 12, textTransform: 'uppercase' }}>Discovering Luxury</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
       <FlatList
-        data={activeTab === 'For You' ? MOCK_PROPERTIES : MOCK_PROPERTIES.slice(1)} // Mock different feeds
+        data={listings}
         renderItem={({ item, index }) => (
           <FeedItem
             item={item}
@@ -57,29 +122,53 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         viewabilityConfig={viewabilityConfig}
         onViewableItemsChanged={onViewableItemsChanged}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
         decelerationRate="fast"
-        snapToInterval={WINDOW_HEIGHT - 80} // Must match FeedItem height
+        snapToInterval={WINDOW_HEIGHT}
         snapToAlignment="start"
         initialNumToRender={2}
         windowSize={3}
+        onScrollBeginDrag={hideHeader}
+        onMomentumScrollEnd={showHeader}
+        ListEmptyComponent={
+          <View style={{ height: WINDOW_HEIGHT, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }}>
+            <Ionicons name="videocam-outline" size={64} color="rgba(255, 144, 102, 0.3)" />
+            <Text style={{ color: 'white', fontSize: 24, fontFamily: 'PlusJakartaSans-Bold', textAlign: 'center', marginTop: 20 }}>NO TOURS YET</Text>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.5)', textAlign: 'center', marginTop: 10, fontFamily: 'Manrope-Regular' }}>Be the first to post a luxury property tour.</Text>
+          </View>
+        }
       />
 
-      <SafeAreaView style={styles.topNavContainer}>
-        <View style={styles.topNav}>
-          <TouchableOpacity onPress={() => setActiveTab('Following')}>
-            <Text style={[styles.navText, activeTab === 'Following' && styles.navTextActive]}>Following</Text>
-          </TouchableOpacity>
-          <View style={styles.navSeparator} />
-          <TouchableOpacity onPress={() => setActiveTab('For You')}>
-            <Text style={[styles.navText, activeTab === 'For You' && styles.navTextActive]}>For You</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <Animated.View style={[styles.topNavContainer, { opacity: headerOpacity }]}>
+        <SafeAreaView style={{ width: '100%', alignItems: 'center' }}>
+          <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
+            {isPro && (
+              <TouchableOpacity 
+                onPress={() => router.push('/(tabs)/post')}
+                style={styles.addButton}
+              >
+                <Ionicons name="add" size={28} color="white" />
+              </TouchableOpacity>
+            )}
+            
+            <View style={[styles.topNav, profile && { backgroundColor: 'transparent' }]}>
+              <TouchableOpacity onPress={() => setActiveTab('Following')}>
+                <Text style={[styles.navText, activeTab === 'Following' && styles.navTextActive]}>Seguindo</Text>
+              </TouchableOpacity>
+              <View style={styles.navSeparator} />
+              <TouchableOpacity onPress={() => setActiveTab('For You')}>
+                <Text style={[styles.navText, activeTab === 'For You' && styles.navTextActive]}>Para Você</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </Animated.View>
 
       <PropertyBottomSheet
-        ref={bottomSheetModalRef}
-        property={selectedProperty}
-        onClose={() => setSelectedProperty(null)}
+        ref={bottomSheetRef}
+        property={listings[activeVideoIndex] || null}
+        onClose={() => { }}
       />
     </View>
   );
@@ -88,36 +177,50 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: '#1c1022',
   },
   topNavContainer: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? StatusBar.currentHeight! + 10 : 50,
+    top: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 50,
     width: WINDOW_WIDTH,
-    alignItems: 'center',
     zIndex: 10,
   },
   topNav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  addButton: {
+    position: 'absolute',
+    left: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   navText: {
     color: 'rgba(255, 255, 255, 0.6)',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontFamily: 'PlusJakartaSans-Bold',
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
   navTextActive: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
+    fontFamily: 'PlusJakartaSans-Bold',
   },
   navSeparator: {
     width: 1,
-    height: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    marginHorizontal: 16,
+    height: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    marginHorizontal: 12,
   }
 });

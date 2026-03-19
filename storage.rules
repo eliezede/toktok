@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// Craft rules based on TokTok requirements:
+// 1. Authenticated users can upload to their own folder in uploads/videos/
+// 2. Transcoder API (and public) can read processed videos
+// 3. User can upload property photos
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Original Video Uploads (Triggered for Transcoding)
+    match /uploads/videos/{userId}/{videoId}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Processed HLS Output (Publicly readable for the feed)
+    match /processed/videos/{allPaths=**} {
+      allow read: if true;
+      allow write: if false; // Only via Backend/Admin
+    }
+
+    // Property Photos
+    match /properties/{propertyId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Profile Images
+    match /profile_images/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && (fileName == request.auth.uid || fileName == request.auth.uid + '.jpg');
+    }
+  }
+}

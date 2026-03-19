@@ -1,92 +1,132 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View, StatusBar, SafeAreaView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ProDashboardScreen() {
     const { profile } = useAuth();
 
     return (
-        <ScrollView className="flex-1 bg-gray-50 pt-16 px-6">
-            <View className="flex-row items-center justify-between mb-8">
-                <TouchableOpacity onPress={() => router.back()} className="bg-white p-2 rounded-full shadow-sm">
-                    <Ionicons name="arrow-back" size={24} color="#111827" />
-                </TouchableOpacity>
-                <Text className="text-xl font-bold text-gray-900">Pro Tools</Text>
-                <View className="w-10" />
-            </View>
-
-            <View className="bg-white p-6 rounded-2xl shadow-sm mb-6 border border-gray-100">
-                <View className="flex-row items-center justify-between mb-6">
-                    <View>
-                        <Text className="text-gray-500 font-medium mb-1">Current Plan</Text>
-                        <Text className="text-2xl font-black text-primary capitalize">{profile?.accountPlan || 'Free'}</Text>
-                    </View>
-                    <TouchableOpacity className="bg-primary/10 px-4 py-2 rounded-full">
-                        <Text className="text-primary font-bold">Upgrade</Text>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0e0e0e' }}>
+            <StatusBar barStyle="light-content" />
+            <ScrollView style={{ flex: 1, paddingHorizontal: 24, paddingTop: 20 }}>
+                {/* Header */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+                    <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: 12, borderRadius: 16, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                        <Ionicons name="arrow-back" size={24} color="white" />
                     </TouchableOpacity>
+                    <Text style={{ fontSize: 20, fontFamily: 'PlusJakartaSans-Bold', color: 'white' }}>Ferramentas Pro</Text>
+                    <View style={{ width: 48 }} />
                 </View>
 
-                <View className="flex-row justify-between mb-2">
-                    <Text className="text-gray-600">Active Listings</Text>
-                    <Text className="font-bold text-gray-900">3 / 5</Text>
-                </View>
-                <View className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <View className="w-3/5 h-full bg-primary rounded-full" />
-                </View>
-            </View>
+                {/* Leads Central Focus */}
+                <TouchableOpacity 
+                    onPress={() => router.push('/pro/leads')}
+                    style={{ width: '100%', marginBottom: 32 }}
+                >
+                    <LinearGradient
+                        colors={['rgba(255, 144, 102, 0.25)', 'rgba(255, 144, 102, 0.1)']}
+                        style={{ padding: 32, borderRadius: 40, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 144, 102, 0.4)', alignItems: 'center' }}
+                    >
+                        <View style={{ backgroundColor: '#ff9066', width: 64, height: 64, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 20, shadowColor: '#ff9066', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16 }}>
+                            <Ionicons name="flash" size={32} color="white" />
+                        </View>
+                        <Text style={{ color: 'white', fontSize: 24, fontFamily: 'PlusJakartaSans-ExtraBold', textAlign: 'center' }}>
+                            {profile?.accountPlan === 'Pro' || profile?.accountPlan === 'Agency Pro' ? '45 Novos Leads Hoje' : 'Ver Meus Leads'}
+                        </Text>
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 14, fontFamily: 'PlusJakartaSans-Medium', marginTop: 8, textAlign: 'center' }}>
+                            {profile?.accountPlan === 'Pro' || profile?.accountPlan === 'Agency Pro' ? 'Toque para gerenciar seus interessados' : 'Ative o Pro para ver quem te ligou'}
+                        </Text>
+                        
+                        <View style={{ marginTop: 24, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 16 }}>
+                            <Text style={{ color: 'white', fontFamily: 'PlusJakartaSans-Bold', fontSize: 13 }}>Gerenciar Interessados</Text>
+                        </View>
+                    </LinearGradient>
+                </TouchableOpacity>
 
-            <Text className="text-lg font-bold text-gray-900 mb-4">Analytics (Last 30 Days)</Text>
-
-            <View className="flex-row flex-wrap justify-between mb-8">
-                <View className="w-[48%] bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-4">
-                    <View className="bg-blue-50 w-10 h-10 rounded-full items-center justify-center mb-3">
-                        <Ionicons name="eye" size={20} color="#3B82F6" />
+                {/* Subscription Status Card */}
+                <BlurView intensity={10} tint="dark" style={{ padding: 24, borderRadius: 32, marginBottom: 32, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)', overflow: 'hidden' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+                        <View>
+                            <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 12, fontFamily: 'PlusJakartaSans-Bold', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Plano Atual</Text>
+                             <Text style={{ color: '#ff9066', fontSize: 28, fontFamily: 'PlusJakartaSans-ExtraBold', textTransform: 'capitalize' }}>{profile?.accountPlan || 'Free'}</Text>
+                        </View>
+                        <TouchableOpacity style={{ backgroundColor: '#ff9066', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 }}>
+                            <Text style={{ color: 'white', fontFamily: 'PlusJakartaSans-Bold', fontSize: 14 }}>Upgrade</Text>
+                        </TouchableOpacity>
                     </View>
-                    <Text className="text-2xl font-black text-gray-900">12.4K</Text>
-                    <Text className="text-gray-500 text-sm mt-1">Listing Views</Text>
-                </View>
 
-                <View className="w-[48%] bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-4">
-                    <View className="bg-pink-50 w-10 h-10 rounded-full items-center justify-center mb-3">
-                        <Ionicons name="heart" size={20} color="#EC4899" />
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontFamily: 'PlusJakartaSans-Medium', fontSize: 14 }}>Anúncios Ativos</Text>
+                        <Text style={{ color: 'white', fontFamily: 'PlusJakartaSans-Bold', fontSize: 14 }}>3 / 5</Text>
                     </View>
-                    <Text className="text-2xl font-black text-gray-900">842</Text>
-                    <Text className="text-gray-500 text-sm mt-1">Total Saves</Text>
-                </View>
-
-                <View className="w-[48%] bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-4">
-                    <View className="bg-green-50 w-10 h-10 rounded-full items-center justify-center mb-3">
-                        <Ionicons name="call" size={20} color="#10B981" />
+                    <View style={{ width: '100%', height: 8, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 4, overflow: 'hidden' }}>
+                        <View style={{ width: '60%', height: '100%', backgroundColor: '#ff9066', borderRadius: 4 }} />
                     </View>
-                    <Text className="text-2xl font-black text-gray-900">45</Text>
-                    <Text className="text-gray-500 text-sm mt-1">Lead Contacts</Text>
+                </BlurView>
+
+                <Text style={{ fontSize: 12, fontFamily: 'PlusJakartaSans-Bold', color: 'rgba(255, 255, 255, 0.3)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 20 }}>Visão Geral (30 dias)</Text>
+                
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 32 }}>
+                    <BlurView intensity={5} tint="dark" style={{ width: '48%', padding: 20, borderRadius: 24, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)', marginBottom: 16 }}>
+                        <View style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                            <Ionicons name="eye-outline" size={20} color="#3b82f6" />
+                        </View>
+                        <Text style={{ color: 'white', fontSize: 24, fontFamily: 'PlusJakartaSans-ExtraBold' }}>12.4K</Text>
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 12, fontFamily: 'PlusJakartaSans-Medium', marginTop: 4 }}>Visualizações</Text>
+                    </BlurView>
+
+                    <BlurView intensity={5} tint="dark" style={{ width: '48%', padding: 20, borderRadius: 24, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)', marginBottom: 16 }}>
+                        <View style={{ backgroundColor: 'rgba(236, 72, 153, 0.1)', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                            <Ionicons name="heart-outline" size={20} color="#ec4899" />
+                        </View>
+                        <Text style={{ color: 'white', fontSize: 24, fontFamily: 'PlusJakartaSans-ExtraBold' }}>842</Text>
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 12, fontFamily: 'PlusJakartaSans-Medium', marginTop: 4 }}>Salvos</Text>
+                    </BlurView>
+
+                    <BlurView intensity={5} tint="dark" style={{ width: '48%', padding: 20, borderRadius: 24, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)', marginBottom: 16 }}>
+                        <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                            <Ionicons name="call-outline" size={20} color="#10b981" />
+                        </View>
+                        <Text style={{ color: 'white', fontSize: 24, fontFamily: 'PlusJakartaSans-ExtraBold' }}>45</Text>
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 12, fontFamily: 'PlusJakartaSans-Medium', marginTop: 4 }}>Contatos</Text>
+                    </BlurView>
+
+                    <BlurView intensity={5} tint="dark" style={{ width: '48%', padding: 20, borderRadius: 24, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)', marginBottom: 16 }}>
+                        <View style={{ backgroundColor: 'rgba(255, 144, 102, 0.1)', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                            <Ionicons name="person-add-outline" size={20} color="#ff9066" />
+                        </View>
+                        <Text style={{ color: 'white', fontSize: 24, fontFamily: 'PlusJakartaSans-ExtraBold' }}>128</Text>
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 12, fontFamily: 'PlusJakartaSans-Medium', marginTop: 4 }}>Seguidores</Text>
+                    </BlurView>
                 </View>
 
-                <View className="w-[48%] bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-4">
-                    <View className="bg-purple-50 w-10 h-10 rounded-full items-center justify-center mb-3">
-                        <Ionicons name="person-add" size={20} color="#8B5CF6" />
-                    </View>
-                    <Text className="text-2xl font-black text-gray-900">128</Text>
-                    <Text className="text-gray-500 text-sm mt-1">New Followers</Text>
-                </View>
-            </View>
+                <Text style={{ fontSize: 12, fontFamily: 'PlusJakartaSans-Bold', color: 'rgba(255, 255, 255, 0.3)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 20 }}>Impulsionar Anúncios</Text>
+                
+                <TouchableOpacity
+                    style={{ borderRadius: 32, overflow: 'hidden', marginBottom: 80 }}
+                    onPress={() => router.push('/pro/promote')}
+                >
+                    <LinearGradient
+                        colors={['#ff9066', '#ff743b']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ padding: 24, flexDirection: 'row', alignItems: 'center' }}
+                    >
+                        <View style={{ flex: 1, marginRight: 20 }}>
+                            <Text style={{ color: 'white', fontFamily: 'PlusJakartaSans-Bold', fontSize: 20, marginBottom: 4 }}>Aumente sua Visibilidade</Text>
+                            <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 14, fontFamily: 'PlusJakartaSans-Medium' }}>Fique no topo do feed e gere mais leads instantaneamente.</Text>
+                        </View>
+                        <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }}>
+                            <Ionicons name="rocket-outline" size={28} color="white" />
+                        </View>
+                    </LinearGradient>
+                </TouchableOpacity>
 
-            <Text className="text-lg font-bold text-gray-900 mb-4">Promote Listings</Text>
-            <TouchableOpacity
-                className="bg-indigo-900 p-6 rounded-2xl flex-row items-center justify-between mb-12 shadow-md"
-                onPress={() => router.push('/pro/promote')}
-            >
-                <View className="flex-1 mr-4">
-                    <Text className="text-white font-bold text-lg mb-1">Boost Your Visibility</Text>
-                    <Text className="text-indigo-200 text-sm">Get to the top of the 'For You' feed and generate more leads instantly.</Text>
-                </View>
-                <View className="bg-white/20 p-3 rounded-full">
-                    <Ionicons name="rocket" size={24} color="white" />
-                </View>
-            </TouchableOpacity>
-
-        </ScrollView>
+            </ScrollView>
+        </SafeAreaView>
     );
 }

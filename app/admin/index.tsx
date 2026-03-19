@@ -1,8 +1,10 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View, StatusBar, SafeAreaView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function AdminDashboardScreen() {
     const { profile } = useAuth();
@@ -10,85 +12,105 @@ export default function AdminDashboardScreen() {
     // In a real app, this should check a robust isSuperAdmin claim from the token.
     if (profile?.role !== 'agency') {
         return (
-            <View className="flex-1 items-center justify-center p-6 bg-gray-50">
-                <Ionicons name="shield-half-outline" size={64} color="#EF4444" />
-                <Text className="text-xl font-bold mt-4 text-center">Unauthorized</Text>
-                <Text className="text-gray-500 mt-2 text-center">You need administrator privileges to view this area.</Text>
-                <TouchableOpacity className="mt-6 bg-gray-900 px-6 py-3 rounded-full" onPress={() => router.replace('/(tabs)')}>
-                    <Text className="text-white font-bold">Return Home</Text>
-                </TouchableOpacity>
-            </View>
+            <SafeAreaView style={{ flex: 1, backgroundColor: '#0e0e0e' }}>
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+                    <BlurView intensity={20} tint="dark" style={{ padding: 40, borderRadius: 32, alignItems: 'center', borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                        <Ionicons name="shield-half-outline" size={64} color="#ff9066" />
+                        <Text style={{ color: 'white', fontSize: 24, fontFamily: 'PlusJakartaSans-Bold', marginTop: 24, textAlign: 'center' }}>Não Autorizado</Text>
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 16, fontFamily: 'PlusJakartaSans-Medium', marginTop: 12, textAlign: 'center' }}>Você precisa de privilégios de administrador para acessar esta área.</Text>
+                        <TouchableOpacity 
+                            style={{ marginTop: 32, backgroundColor: '#ff9066', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 20 }} 
+                            onPress={() => router.replace('/(tabs)')}
+                        >
+                            <Text style={{ color: 'white', fontFamily: 'PlusJakartaSans-Bold', fontSize: 16 }}>Voltar para o Início</Text>
+                        </TouchableOpacity>
+                    </BlurView>
+                </View>
+            </SafeAreaView>
         );
     }
 
     return (
-        <ScrollView className="flex-1 bg-gray-50 pt-16 px-6">
-            <View className="flex-row items-center justify-between mb-8">
-                <TouchableOpacity onPress={() => router.back()} className="bg-white p-2 rounded-full shadow-sm">
-                    <Ionicons name="arrow-back" size={24} color="#111827" />
-                </TouchableOpacity>
-                <Text className="text-xl font-bold text-gray-900">Admin Control</Text>
-                <View className="w-10" />
-            </View>
-
-            <View className="flex-row flex-wrap justify-between mb-8">
-                <View className="w-[48%] bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-4">
-                    <Text className="text-gray-500 mb-2">Total Users</Text>
-                    <Text className="text-2xl font-black text-gray-900 mb-1">1,245</Text>
-                    <Text className="text-green-500 text-xs font-bold">+12 today</Text>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#1c1022' }}>
+            <StatusBar barStyle="light-content" />
+            <ScrollView style={{ flex: 1, paddingHorizontal: 24, paddingTop: 20 }}>
+                {/* Header */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+                    <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: 12, borderRadius: 16, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                        <Ionicons name="arrow-back" size={24} color="white" />
+                    </TouchableOpacity>
+                    <Text style={{ fontSize: 20, fontFamily: 'PlusJakartaSans-Bold', color: 'white' }}>Painel Administrativo</Text>
+                    <View style={{ width: 48 }} />
                 </View>
 
-                <View className="w-[48%] bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-4">
-                    <Text className="text-gray-500 mb-2">Active Listings</Text>
-                    <Text className="text-2xl font-black text-gray-900 mb-1">8,432</Text>
-                    <Text className="text-green-500 text-xs font-bold">+45 today</Text>
+                {/* Stats Grid */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 32 }}>
+                    <BlurView intensity={10} tint="dark" style={{ width: '48%', padding: 20, borderRadius: 24, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)', marginBottom: 16 }}>
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 12, fontFamily: 'PlusJakartaSans-Bold', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Usuários</Text>
+                        <Text style={{ color: 'white', fontSize: 28, fontFamily: 'PlusJakartaSans-ExtraBold' }}>1,245</Text>
+                        <Text style={{ color: '#10b981', fontSize: 10, fontFamily: 'PlusJakartaSans-Bold', marginTop: 4 }}>+12 hoje</Text>
+                    </BlurView>
+
+                    <BlurView intensity={10} tint="dark" style={{ width: '48%', padding: 20, borderRadius: 24, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)', marginBottom: 16 }}>
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 12, fontFamily: 'PlusJakartaSans-Bold', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Anúncios</Text>
+                        <Text style={{ color: 'white', fontSize: 28, fontFamily: 'PlusJakartaSans-ExtraBold' }}>8,432</Text>
+                        <Text style={{ color: '#10b981', fontSize: 10, fontFamily: 'PlusJakartaSans-Bold', marginTop: 4 }}>+45 hoje</Text>
+                    </BlurView>
+
+                    <TouchableOpacity style={{ width: '100%' }}>
+                        <LinearGradient
+                            colors={['rgba(239, 68, 68, 0.1)', 'rgba(239, 68, 68, 0.05)']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={{ width: '100%', padding: 24, borderRadius: 24, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.2)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                        >
+                            <View>
+                                <Text style={{ color: 'rgba(239, 68, 68, 0.8)', fontSize: 12, fontFamily: 'PlusJakartaSans-Bold', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Conteúdo Denunciado</Text>
+                                <Text style={{ color: 'white', fontSize: 24, fontFamily: 'PlusJakartaSans-ExtraBold' }}>12 Pendentes</Text>
+                            </View>
+                            <View style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', padding: 12, borderRadius: 16 }}>
+                                <Ionicons name="warning-outline" size={24} color="#ef4444" />
+                            </View>
+                        </LinearGradient>
+                    </TouchableOpacity>
                 </View>
 
-                <View className="w-full bg-white p-4 rounded-2xl shadow-sm border border-red-100 mb-4">
-                    <View className="flex-row items-center justify-between">
-                        <View>
-                            <Text className="text-gray-500 mb-1">Reported Content</Text>
-                            <Text className="text-2xl font-black text-red-500">12 Pending</Text>
+                <Text style={{ fontSize: 12, fontFamily: 'PlusJakartaSans-Bold', color: 'rgba(255, 255, 255, 0.3)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 20 }}>Módulos de Gestão</Text>
+
+                <TouchableOpacity
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: 24, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)' }}
+                    onPress={() => router.push('/admin/users')}
+                >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', width: 56, height: 56, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
+                            <Ionicons name="people-outline" size={24} color="#3b82f6" />
                         </View>
-                        <Ionicons name="warning" size={32} color="#EF4444" opacity={0.2} />
+                        <View>
+                            <Text style={{ fontFamily: 'PlusJakartaSans-Bold', fontSize: 18, color: 'white' }}>Gestão de Usuários</Text>
+                            <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 13, fontFamily: 'PlusJakartaSans-Medium', marginTop: 2 }}>Banir, verificar ou alterar cargos</Text>
+                        </View>
                     </View>
-                </View>
-            </View>
+                    <Ionicons name="chevron-forward" size={20} color="rgba(255, 255, 255, 0.2)" />
+                </TouchableOpacity>
 
-            <Text className="text-lg font-bold text-gray-900 mb-4">Management Modules</Text>
+                <TouchableOpacity
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: 24, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)' }}
+                    onPress={() => router.push('/admin/listings')}
+                >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ backgroundColor: 'rgba(255, 144, 102, 0.1)', width: 56, height: 56, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
+                            <Ionicons name="home-outline" size={24} color="#ff9066" />
+                        </View>
+                        <View>
+                            <Text style={{ fontFamily: 'PlusJakartaSans-Bold', fontSize: 18, color: 'white' }}>Moderação de Anúncios</Text>
+                            <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 13, fontFamily: 'PlusJakartaSans-Medium', marginTop: 2 }}>Revisar novos conteúdos postados</Text>
+                        </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="rgba(255, 255, 255, 0.2)" />
+                </TouchableOpacity>
 
-            <TouchableOpacity
-                className="bg-white p-6 rounded-2xl flex-row items-center justify-between mb-4 shadow-sm border border-gray-100"
-                onPress={() => router.push('/admin/users')}
-            >
-                <View className="flex-row items-center">
-                    <View className="bg-blue-50 w-12 h-12 rounded-full items-center justify-center mr-4">
-                        <Ionicons name="people" size={24} color="#3B82F6" />
-                    </View>
-                    <View>
-                        <Text className="font-bold text-lg text-gray-900">Manage Users</Text>
-                        <Text className="text-gray-500 text-sm">Ban, verify, or change roles</Text>
-                    </View>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                className="bg-white p-6 rounded-2xl flex-row items-center justify-between mb-4 shadow-sm border border-gray-100"
-                onPress={() => router.push('/admin/listings')}
-            >
-                <View className="flex-row items-center">
-                    <View className="bg-purple-50 w-12 h-12 rounded-full items-center justify-center mr-4">
-                        <Ionicons name="home" size={24} color="#8B5CF6" />
-                    </View>
-                    <View>
-                        <Text className="font-bold text-lg text-gray-900">Moderate Listings</Text>
-                        <Text className="text-gray-500 text-sm">Review newly posted content</Text>
-                    </View>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-
-        </ScrollView>
+                <View style={{ height: 100 }} />
+            </ScrollView>
+        </SafeAreaView>
     );
 }
