@@ -9,7 +9,7 @@ export default function HelpScreen() {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#1c1022' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0e0e0e' }}>
             <StatusBar barStyle="light-content" />
             <View style={{ paddingHorizontal: 24, paddingTop: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
                 <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: 12, borderRadius: 16, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
@@ -24,7 +24,7 @@ export default function HelpScreen() {
                 
                 <View style={{ gap: 16 }}>
                     <TouchableOpacity style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: 24, borderRadius: 24 }}>
-                        <Text style={{ color: '#af25f4', fontFamily: 'PlusJakartaSans-Bold', marginBottom: 8 }}>Perguntas Frequentes</Text>
+                        <Text style={{ color: '#ff9066', fontFamily: 'PlusJakartaSans-Bold', marginBottom: 8 }}>Perguntas Frequentes</Text>
                         <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>Veja as dúvidas mais comuns dos nossos usuários.</Text>
                     </TouchableOpacity>
 

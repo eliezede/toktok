@@ -31,7 +31,7 @@ export default function AdminDashboardScreen() {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#1c1022' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0e0e0e' }}>
             <StatusBar barStyle="light-content" />
             <ScrollView style={{ flex: 1, paddingHorizontal: 24, paddingTop: 20 }}>
                 {/* Header */}

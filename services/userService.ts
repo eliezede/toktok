@@ -53,9 +53,10 @@ export class UserService {
         const agentRef = doc(db, this.COLLECTION, agentId);
 
         try {
-            console.log(`[UserService] Step 1: Updating User following list...`);
+            console.log(`[UserService] Step 1: Updating User following list & count...`);
             await updateDoc(userRef, {
-                followedAgents: isFollowing ? arrayRemove(agentId) : arrayUnion(agentId)
+                followedAgents: isFollowing ? arrayRemove(agentId) : arrayUnion(agentId),
+                followingCount: increment(isFollowing ? -1 : 1)
             });
             console.log(`[UserService] Step 1 SUCCESS`);
         } catch (error: any) {

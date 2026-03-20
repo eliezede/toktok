@@ -77,7 +77,7 @@ export default function NotificationsScreen() {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#1c1022' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0e0e0e' }}>
             <StatusBar barStyle="light-content" />
             
             {/* Header */}
@@ -100,7 +100,7 @@ export default function NotificationsScreen() {
                             value={pushEnabled} 
                             onValueChange={handleTogglePush}
                             trackColor={{ false: "#3e3e3e", true: "rgba(175, 37, 244, 0.5)" }}
-                            thumbColor={pushEnabled ? "#af25f4" : "#f4f3f4"}
+                            thumbColor={pushEnabled ? "#ff9066" : "#f4f3f4"}
                         />
                     </View>
 
@@ -113,7 +113,7 @@ export default function NotificationsScreen() {
                             value={emailEnabled} 
                             onValueChange={handleToggleEmail}
                             trackColor={{ false: "#3e3e3e", true: "rgba(175, 37, 244, 0.5)" }}
-                            thumbColor={emailEnabled ? "#af25f4" : "#f4f3f4"}
+                            thumbColor={emailEnabled ? "#ff9066" : "#f4f3f4"}
                         />
                     </View>
                 </View>

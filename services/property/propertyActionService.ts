@@ -1,3 +1,4 @@
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import { db, storage } from '../../firebase/config';
 import { PropertyListing } from '../../types';
 import { doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
@@ -39,6 +40,20 @@ export class PropertyActionService {
             playbackType: 'hls'
         });
 
+        // 1.5 Generate and upload thumbnail from video
+        let thumbnailUrl = '';
+        try {
+            console.log("[PropertyActionService] Generating thumbnail for:", videoUri);
+            const thumb = await VideoThumbnails.getThumbnailAsync(videoUri, {
+                time: 1000, // Capture at 1 second mark
+                quality: 0.8
+            });
+            thumbnailUrl = await this.uploadMedia(thumb.uri, `properties/${propertyId}/thumbnail.jpg`);
+            console.log("[PropertyActionService] Thumbnail uploaded:", thumbnailUrl);
+        } catch (e) {
+            console.error("[PropertyActionService] Error generating thumbnail:", e);
+        }
+
         // 2. Upload video
         const videoUrl = await this.uploadMedia(videoUri, `uploads/videos/${userId}/${videoId}/original.mp4`);
 
@@ -55,6 +70,7 @@ export class PropertyActionService {
             id: propertyId,
             videoId,
             videoUrl,
+            thumbnailUrl,
             imageUrls,
             createdBy: userId,
             createdAt: Date.now(),
@@ -63,7 +79,7 @@ export class PropertyActionService {
 
         await setDoc(doc(db, this.COLLECTION, propertyId), fullPropertyData);
 
-        // 5. Update video doc to reflect success (optional but good practice)
+        // 5. Update video doc to reflect success
         await updateDoc(doc(db, 'videos', videoId), { status: 'ready', videoUrl });
 
         return propertyId;

@@ -84,7 +84,7 @@ export default function UserListingsScreen() {
                 <Text style={styles.priceText}>{formatPrice(item.price)}</Text>
                 <Text style={styles.titleText} numberOfLines={1}>{item.listingTitle}</Text>
                 <View style={styles.locationContainer}>
-                    <Ionicons name="location" size={10} color="#af25f4" />
+                    <Ionicons name="location" size={10} color="#ff9066" />
                     <Text style={styles.locationText}>{item.neighborhood}, {item.city}</Text>
                 </View>
 
@@ -108,7 +108,7 @@ export default function UserListingsScreen() {
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#af25f4" />
+                <ActivityIndicator size="large" color="#ff9066" />
                 <Text style={styles.loadingText}>A CARREGAR SEUS ANÚNCIOS...</Text>
             </View>
         );

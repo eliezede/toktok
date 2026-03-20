@@ -5,7 +5,7 @@ import { SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } fro
 
 export default function PrivacyScreen() {
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#1c1022' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0e0e0e' }}>
             <StatusBar barStyle="light-content" />
             <View style={{ paddingHorizontal: 24, paddingTop: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
                 <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: 12, borderRadius: 16, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
@@ -16,7 +16,7 @@ export default function PrivacyScreen() {
             </View>
 
             <ScrollView contentContainerStyle={{ paddingHorizontal: 24 }}>
-                <Text style={{ color: '#af25f4', fontFamily: 'PlusJakartaSans-Bold', fontSize: 18, marginBottom: 16 }}>Termos e Condições</Text>
+                <Text style={{ color: '#ff9066', fontFamily: 'PlusJakartaSans-Bold', fontSize: 18, marginBottom: 16 }}>Termos e Condições</Text>
                 <Text style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 24, fontFamily: 'PlusJakartaSans-Regular', marginBottom: 24 }}>
                     Sua privacidade é nossa prioridade. Todos os seus dados de contato e localização são usados apenas para facilitar a negociação de imóveis dentro da plataforma TokTok.
                 </Text>

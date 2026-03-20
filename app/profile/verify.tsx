@@ -70,7 +70,7 @@ export default function VerifyScreen() {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#1c1022' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0e0e0e' }}>
             <StatusBar barStyle="light-content" />
             
             {/* Header */}
@@ -86,7 +86,7 @@ export default function VerifyScreen() {
                 {/* Intro Section */}
                 <View style={{ alignItems: 'center', marginBottom: 40 }}>
                     <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(175, 37, 244, 0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-                        <Ionicons name="checkmark-circle" size={40} color="#af25f4" />
+                        <Ionicons name="checkmark-circle" size={40} color="#ff9066" />
                     </View>
                     <Text style={{ fontSize: 24, fontFamily: 'PlusJakartaSans-Bold', color: 'white', textAlign: 'center', marginBottom: 12 }}>
                         Torne-se um Agente Verificado
@@ -168,7 +168,7 @@ export default function VerifyScreen() {
                         ].map((item, idx) => (
                             <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                                 <View style={{ backgroundColor: 'rgba(175, 37, 244, 0.1)', padding: 8, borderRadius: 10 }}>
-                                    <Ionicons name={item.icon as any} size={16} color="#af25f4" />
+                                    <Ionicons name={item.icon as any} size={16} color="#ff9066" />
                                 </View>
                                 <Text style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'PlusJakartaSans-Medium', fontSize: 14 }}>{item.text}</Text>
                             </View>
@@ -179,7 +179,7 @@ export default function VerifyScreen() {
                     <TouchableOpacity 
                         onPress={handleSubmit}
                         disabled={isSubmitting}
-                        style={{ backgroundColor: '#af25f4', padding: 18, borderRadius: 20, alignItems: 'center', marginTop: 24, opacity: isSubmitting ? 0.7 : 1 }}
+                        style={{ backgroundColor: '#ff9066', padding: 18, borderRadius: 20, alignItems: 'center', marginTop: 24, opacity: isSubmitting ? 0.7 : 1 }}
                     >
                         {isSubmitting ? (
                             <ActivityIndicator color="white" />

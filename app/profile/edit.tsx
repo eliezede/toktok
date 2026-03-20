@@ -61,7 +61,7 @@ export default function EditProfileScreen() {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#1c1022' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0e0e0e' }}>
             <StatusBar barStyle="light-content" />
             
             {/* Header */}
@@ -76,9 +76,9 @@ export default function EditProfileScreen() {
                     style={{ opacity: isSaving ? 0.3 : 1 }}
                 >
                     {isSaving ? (
-                        <ActivityIndicator size="small" color="#af25f4" />
+                        <ActivityIndicator size="small" color="#ff9066" />
                     ) : (
-                        <Text style={{ color: '#af25f4', fontFamily: 'PlusJakartaSans-Bold' }}>Salvar</Text>
+                        <Text style={{ color: '#ff9066', fontFamily: 'PlusJakartaSans-Bold' }}>Salvar</Text>
                     )}
                 </TouchableOpacity>
             </View>
@@ -93,7 +93,7 @@ export default function EditProfileScreen() {
                                     but for consistency with ProfileScreen, we should use similar logic if we want to show it.
                                     Actually, user just asked to connect fields to DB.
                                 */}
-                                <View style={{ flex: 1, backgroundColor: '#af25f4', alignItems: 'center', justifyContent: 'center' }}>
+                                <View style={{ flex: 1, backgroundColor: '#ff9066', alignItems: 'center', justifyContent: 'center' }}>
                                     <Text style={{ color: 'white', fontSize: 40, fontFamily: 'PlusJakartaSans-Bold' }}>
                                         {fullName.charAt(0).toUpperCase() || '?'}
                                     </Text>
@@ -129,19 +129,19 @@ export default function EditProfileScreen() {
                         <Text style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 12, fontFamily: 'PlusJakartaSans-Medium', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Número do CRECI</Text>
                         <TouchableOpacity 
                             onPress={() => router.push('/profile/verify')}
-                            style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, borderStyle: 'solid', borderWidth: 1, borderColor: profile?.creci ? 'rgba(175, 37, 244, 0.2)' : 'rgba(255,255,255,0.05)', overflow: 'hidden', padding: 18, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+                            style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, borderStyle: 'solid', borderWidth: 1, borderColor: profile?.creciNumber ? 'rgba(255, 144, 102, 0.2)' : 'rgba(255,255,255,0.05)', overflow: 'hidden', padding: 18, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
                         >
-                            <Text style={{ color: profile?.creci ? 'white' : 'rgba(255,255,255,0.2)', fontFamily: 'PlusJakartaSans-Medium', fontSize: 16 }}>
-                                {profile?.creci || 'Não informado (Toque para verificar)'}
+                            <Text style={{ color: profile?.creciNumber ? 'white' : 'rgba(255,255,255,0.2)', fontFamily: 'PlusJakartaSans-Medium', fontSize: 16 }}>
+                                {profile?.creciNumber || 'Não informado (Toque para verificar)'}
                             </Text>
                             {profile?.isVerified ? (
-                                <Ionicons name="checkmark-circle" size={20} color="#af25f4" />
+                                <Ionicons name="checkmark-circle" size={20} color="#ff9066" />
                             ) : (
                                 <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.2)" />
                             )}
                         </TouchableOpacity>
-                        {!profile?.isVerified && (
-                            <Text style={{ marginTop: 8, color: '#af25f4', fontSize: 11, paddingHorizontal: 4, fontFamily: 'PlusJakartaSans-Bold' }}>
+                        {!profile?.isVerified && !!profile?.creciNumber && (
+                            <Text style={{ marginTop: 8, color: '#ff9066', fontSize: 11, paddingHorizontal: 4, fontFamily: 'PlusJakartaSans-Bold' }}>
                                 Precisa ser validado pela nossa equipe.
                             </Text>
                         )}

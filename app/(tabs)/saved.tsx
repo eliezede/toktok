@@ -126,7 +126,7 @@ export default function FavoritesScreen() {
         >
             <View className="w-2/5 bg-white/5">
                 <Image
-                    source={{ uri: property.thumbnailUrl || property.videoUrl || (property.imageUrls && property.imageUrls[0]) }}
+                    source={{ uri: property.thumbnailUrl || (property.imageUrls && property.imageUrls[0]) || property.videoUrl }}
                     style={{ flex: 1 }}
                     contentFit="cover"
                 />

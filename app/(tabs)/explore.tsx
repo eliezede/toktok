@@ -232,7 +232,7 @@ export default function ExploreScreen() {
                                 >
                                     <View style={{ height: ITEM_WIDTH * 1.6, backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
                                         <Image
-                                            source={{ uri: property.thumbnailUrl || property.videoUrl }}
+                                            source={{ uri: property.thumbnailUrl || (property.imageUrls && property.imageUrls[0]) || property.videoUrl }}
                                             style={{ flex: 1 }}
                                             contentFit="cover"
                                         />

@@ -1,10 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import React, { useEffect, useState, useMemo } from 'react';
 import { ScrollView, Text, TouchableOpacity, View, StatusBar, SafeAreaView, ActivityIndicator, Dimensions, Linking } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { UserService } from '@/services/userService';
 import { PropertyQueryService } from '@/services/property/propertyQueryService';
 import { UserProfile, PropertyListing } from '@/types';
@@ -28,23 +30,34 @@ export default function PublicProfileScreen() {
     const isFollowing = currentProfile?.followedAgents?.includes(id) || false;
 
     useEffect(() => {
-        if (id) {
-            fetchProfileData();
-        }
+        if (!id) return;
+
+        // 1. Listen to Profile Changes in Real-Time
+        const profileRef = doc(db, 'users', id);
+        const unsubscribe = onSnapshot(profileRef, (docSnap) => {
+            if (docSnap.exists()) {
+                setProfile({ id: docSnap.id, ...docSnap.data() } as UserProfile);
+            }
+        });
+
+        // 2. Fetch Listings (kept as one-time fetch for performance, or could be snapshot too)
+        fetchInitialData();
+
+        return () => unsubscribe();
     }, [id]);
 
-    const fetchProfileData = async () => {
+    const fetchInitialData = async () => {
         setIsLoading(true);
         try {
             const profileData = await UserService.getUserProfile(id);
-            setProfile(profileData);
+            // setProfile(profileData); // redundant because of snapshot, but keeps flow working
             
             if (profileData?.role === 'agent' || profileData?.role === 'agency') {
                 const agentListings = await PropertyQueryService.getListingsByAgent(id as string);
                 setListings(agentListings);
             }
         } catch (error) {
-            console.error("Error fetching public profile:", error);
+            console.error("Error fetching initial public profile data:", error);
         } finally {
             setIsLoading(false);
         }
@@ -88,18 +101,32 @@ export default function PublicProfileScreen() {
 
     if (isLoading) {
         return (
-            <View style={{ flex: 1, backgroundColor: '#1c1022', alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator size="large" color="#af25f4" />
-            </View>
+            <LinearGradient
+                colors={['#0e0e0e', '#1c1022']}
+                style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+            >
+                <ActivityIndicator size="large" color="#ff9066" />
+                <Text style={{ 
+                    color: 'white', 
+                    marginTop: 24, 
+                    fontFamily: 'PlusJakartaSans-Bold', 
+                    letterSpacing: 4, 
+                    fontSize: 10, 
+                    textTransform: 'uppercase',
+                    opacity: 0.8
+                }}>
+                    Carregando Perfil
+                </Text>
+            </LinearGradient>
         );
     }
 
     if (!profile) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: '#1c1022', alignItems: 'center', justifyContent: 'center' }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: '#0e0e0e', alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ color: 'white', fontFamily: 'PlusJakartaSans-Bold', fontSize: 18 }}>Perfil não encontrado</Text>
                 <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
-                    <Text style={{ color: '#af25f4' }}>Voltar</Text>
+                    <Text style={{ color: '#ff9066' }}>Voltar</Text>
                 </TouchableOpacity>
             </SafeAreaView>
         );
@@ -122,7 +149,7 @@ export default function PublicProfileScreen() {
         >
             <View className="w-2/5 bg-white/5">
                 <Image
-                    source={{ uri: property.thumbnailUrl || property.videoUrl || (property.imageUrls && property.imageUrls[0]) }}
+                    source={{ uri: property.thumbnailUrl || (property.imageUrls && property.imageUrls[0]) || property.videoUrl }}
                     style={{ flex: 1 }}
                     contentFit="cover"
                 />
@@ -149,7 +176,7 @@ export default function PublicProfileScreen() {
                         <Ionicons
                             name={currentProfile?.likedProperties?.includes(property.id) ? "heart" : "heart-outline"}
                             size={20}
-                            color="#af25f4"
+                            color="#ff9066"
                         />
                     </TouchableOpacity>
                 </View>
@@ -157,11 +184,11 @@ export default function PublicProfileScreen() {
                 <Text className="text-white/40 font-medium text-[10px] mb-3" numberOfLines={1}>{property.neighborhood}, {property.city}</Text>
                 <View className="flex-row gap-3">
                     <View className="flex-row items-center bg-white/5 px-2 py-1 rounded-lg">
-                        <Ionicons name="bed-outline" size={12} color="#af25f4" />
+                        <Ionicons name="bed-outline" size={12} color="#ff9066" />
                         <Text className="text-[9px] text-white font-bold ml-1">{property.bedrooms}</Text>
                     </View>
                     <View className="flex-row items-center bg-white/5 px-2 py-1 rounded-lg">
-                        <Ionicons name="water-outline" size={12} color="#af25f4" />
+                        <Ionicons name="water-outline" size={12} color="#ff9066" />
                         <Text className="text-[9px] text-white font-bold ml-1">{property.bathrooms}</Text>
                     </View>
                 </View>
@@ -219,7 +246,7 @@ export default function PublicProfileScreen() {
                     <View className="bg-primary/5 p-4 rounded-xl border border-primary/10">
                         <Text className="text-[10px] font-jakarta-bold text-white/30 uppercase tracking-widest mb-2">Faixa de Preço</Text>
                         <View className="flex-row items-center gap-3">
-                            <Ionicons name="wallet-outline" size={20} color="#af25f4" />
+                            <Ionicons name="wallet-outline" size={20} color="#ff9066" />
                             <Text className="text-lg font-jakarta-bold text-white">
                                 {formatPrice(profile.budgetRange.min)} — {formatPrice(profile.budgetRange.max)}
                             </Text>
@@ -258,7 +285,7 @@ export default function PublicProfileScreen() {
         <ScrollView className="flex-1 bg-background-dark" showsVerticalScrollIndicator={false}>
             {/* Header Backdrop */}
             <View style={{ height: 180, width: '100%', position: 'absolute', top: 0 }}>
-                <LinearGradient colors={['rgba(175, 37, 244, 0.2)', 'transparent']} style={{ flex: 1 }} />
+                <LinearGradient colors={['rgba(255, 144, 102, 0.2)', 'transparent']} style={{ flex: 1 }} />
             </View>
 
             <View className="p-4 gap-5" style={{ paddingTop: 120 }}>
@@ -280,7 +307,7 @@ export default function PublicProfileScreen() {
                             <Text className="text-2xl font-jakarta-bold text-white" numberOfLines={1}>
                                 {profile.role === 'agency' ? profile.agencyName : profile.fullName}
                             </Text>
-                            {profile.isVerified && <Ionicons name="checkmark-circle" size={20} color="#af25f4" />}
+                            {profile.isVerified && <Ionicons name="checkmark-circle" size={20} color="#ff9066" />}
                         </View>
                         
                         <View className="flex-row items-center gap-2 mb-1">
@@ -340,7 +367,7 @@ export default function PublicProfileScreen() {
                 {profile.role === 'agency' && profile.foundedYear && (
                     <View className="flex-row items-center bg-white/5 p-3 rounded-2xl gap-3">
                         <View className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center">
-                            <Ionicons name="business" size={20} color="#af25f4" />
+                            <Ionicons name="business" size={20} color="#ff9066" />
                         </View>
                         <View>
                             <Text className="text-white font-jakarta-bold text-sm">Desde {profile.foundedYear}</Text>
@@ -413,7 +440,7 @@ export default function PublicProfileScreen() {
                         onPress={() => setShowFilterModal(true)}
                         className="w-12 h-12 bg-white/5 rounded-2xl items-center justify-center border border-white/10"
                     >
-                        <Ionicons name="options-outline" size={24} color={filterType !== 'all' || sortBy !== 'newest' ? "#af25f4" : "white"} />
+                        <Ionicons name="options-outline" size={24} color={filterType !== 'all' || sortBy !== 'newest' ? "#ff9066" : "white"} />
                     </TouchableOpacity>
                 </View>
 
@@ -435,7 +462,7 @@ export default function PublicProfileScreen() {
     );
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#1c1022' }}>
+        <View style={{ flex: 1, backgroundColor: '#0e0e0e' }}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
             <Stack.Screen options={{ headerShown: false }} />
             
@@ -459,7 +486,7 @@ export default function PublicProfileScreen() {
                         onPress={() => setShowFilterModal(false)}
                         style={{ flex: 0.3 }}
                     />
-                    <View className="flex-1 bg-[#1c1022] rounded-t-[40px] border-t border-white/10 p-8">
+                    <View className="flex-1 bg-[#0e0e0e] rounded-t-[40px] border-t border-white/10 p-8">
                         <View className="w-12 h-1.5 bg-white/10 self-center rounded-full mb-8" />
 
                         <View className="flex-row justify-between items-center mb-8">
@@ -502,7 +529,7 @@ export default function PublicProfileScreen() {
                                     className={`px-6 py-4 rounded-2xl border flex-row justify-between items-center ${sortBy === option.id ? 'bg-primary/10 border-primary' : 'bg-white/5 border-white/10'}`}
                                 >
                                     <Text className={`font-bold text-sm ${sortBy === option.id ? 'text-primary' : 'text-white/60'}`}>{option.label}</Text>
-                                    {sortBy === option.id && <Ionicons name="checkmark-circle" size={20} color="#af25f4" />}
+                                    {sortBy === option.id && <Ionicons name="checkmark-circle" size={20} color="#ff9066" />}
                                 </TouchableOpacity>
                             ))}
                         </View>

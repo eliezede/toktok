@@ -59,6 +59,12 @@ function RootLayoutNav() {
   });
 
     useEffect(() => {
+        if (fontsLoaded) {
+            SplashScreen.hideAsync().catch(() => {});
+        }
+    }, [fontsLoaded]);
+
+    useEffect(() => {
     console.log(`[RootLayout] Fonts loaded: ${fontsLoaded}, Auth loading: ${isLoading}, Segments: ${segments.join('/')}`);
     if (isLoading) {
       console.log("[RootLayout] Still loading auth...");
@@ -70,8 +76,8 @@ function RootLayoutNav() {
     console.log(`[RootLayout] Check transition: user=${!!user}, isGuest=${isGuest}, inAuthGroup=${inAuthGroup}`);
 
     if (!user && !isGuest && !inAuthGroup) {
-      console.log("[RootLayout] Redirecting to /auth/role-selection");
-      router.replace('/auth/role-selection');
+      console.log("[RootLayout] Redirecting to /auth");
+      router.replace('/auth');
     } else if (user && inAuthGroup) {
       console.log("[RootLayout] Redirecting to /(tabs) (User detected)");
       router.replace('/(tabs)');
@@ -100,8 +106,8 @@ function RootLayoutNav() {
 
   if (isLoading || !fontsLoaded) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#1c1022', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#af25f4" />
+      <View style={{ flex: 1, backgroundColor: '#0e0e0e', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#ff9066" />
       </View>
     );
   }
@@ -128,16 +134,62 @@ function RootLayoutNav() {
   );
 }
 
+import { Platform } from 'react-native';
 import { FeedProvider } from '@/context/FeedContext';
 
+// Web-specific Icon Injection
+if (Platform.OS === 'web') {
+  const iconFontStyles = `
+    @font-face {
+      font-family: 'Ionicons';
+      src: url(${require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf')}) format('truetype');
+    }
+  `;
+  const scrollbarStyles = `
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #000;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #ff9066;
+      border-radius: 10px;
+    }
+    body {
+      overflow: hidden; /* Prevent body scroll on desktop when using wrapper */
+    }
+  `;
+  if (typeof document !== 'undefined') {
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    const combinedStyles = iconFontStyles + scrollbarStyles;
+    if ((style as any).styleSheet) {
+      (style as any).styleSheet.cssText = combinedStyles;
+    } else {
+      style.appendChild(document.createTextNode(combinedStyles));
+    }
+    document.head.appendChild(style);
+  }
+}
+
+import DesktopWrapper from '@/components/DesktopWrapper';
+
 export default function RootLayout() {
+  const colorScheme = useColorScheme();
+  
   return (
-    <AuthProvider>
-      <SafeAreaProvider>
+    <SafeAreaProvider initialMetrics={Platform.OS === 'web' ? {
+      frame: { x: 0, y: 0, width: 0, height: 0 },
+      insets: { top: 0, left: 0, right: 0, bottom: 20 }, // Minimal safe inset for web
+    } : undefined}>
+      <AuthProvider>
         <FeedProvider>
-          <RootLayoutNav />
+          <DesktopWrapper>
+            <RootLayoutNav />
+          </DesktopWrapper>
         </FeedProvider>
-      </SafeAreaProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

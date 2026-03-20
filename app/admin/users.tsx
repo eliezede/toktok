@@ -60,7 +60,7 @@ export default function AdminUsersScreen() {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#1c1022' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0e0e0e' }}>
             <StatusBar barStyle="light-content" />
             
             {/* Header */}
@@ -74,11 +74,11 @@ export default function AdminUsersScreen() {
 
             <ScrollView 
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#af25f4" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#ff9066" />}
             >
                 {isLoading ? (
                     <View style={{ marginTop: 100, alignItems: 'center' }}>
-                        <ActivityIndicator size="large" color="#af25f4" />
+                        <ActivityIndicator size="large" color="#ff9066" />
                         <Text style={{ color: 'rgba(255, 255, 255, 0.4)', marginTop: 16 }}>Buscando solicitações...</Text>
                     </View>
                 ) : pendingUsers.length > 0 ? (
@@ -90,12 +90,12 @@ export default function AdminUsersScreen() {
                                         {u.profileImage ? (
                                             <Image source={{ uri: u.profileImage }} style={{ width: '100%', height: '100%', borderRadius: 20 }} />
                                         ) : (
-                                            <Text style={{ fontSize: 24, color: '#af25f4', fontFamily: 'PlusJakartaSans-Bold' }}>{u.fullName?.charAt(0)}</Text>
+                                            <Text style={{ fontSize: 24, color: '#ff9066', fontFamily: 'PlusJakartaSans-Bold' }}>{u.fullName?.charAt(0)}</Text>
                                         )}
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={{ color: 'white', fontFamily: 'PlusJakartaSans-Bold', fontSize: 18 }}>{u.fullName}</Text>
-                                        <Text style={{ color: '#af25f4', fontSize: 12, fontFamily: 'PlusJakartaSans-Bold', marginTop: 2 }}>CRECI: {u.creci}</Text>
+                                        <Text style={{ color: '#ff9066', fontSize: 12, fontFamily: 'PlusJakartaSans-Bold', marginTop: 2 }}>CRECI: {u.creciNumber}</Text>
                                     </View>
                                 </View>
 
@@ -108,7 +108,7 @@ export default function AdminUsersScreen() {
                                     </TouchableOpacity>
                                     <TouchableOpacity 
                                         onPress={() => handleAction(u.id!, 'approve')}
-                                        style={{ flex: 1, backgroundColor: '#af25f4', paddingVertical: 14, borderRadius: 16, alignItems: 'center' }}
+                                        style={{ flex: 1, backgroundColor: '#ff9066', paddingVertical: 14, borderRadius: 16, alignItems: 'center' }}
                                     >
                                         <Text style={{ color: 'white', fontFamily: 'PlusJakartaSans-Bold' }}>Aprovar</Text>
                                     </TouchableOpacity>

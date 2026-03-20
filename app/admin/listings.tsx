@@ -58,7 +58,7 @@ export default function AdminListingsScreen() {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#1c1022' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0e0e0e' }}>
             <StatusBar barStyle="light-content" />
             
             {/* Header */}
@@ -72,11 +72,11 @@ export default function AdminListingsScreen() {
 
             <ScrollView 
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#af25f4" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#ff9066" />}
             >
                 {isLoading ? (
                     <View style={{ marginTop: 100, alignItems: 'center' }}>
-                        <ActivityIndicator size="large" color="#af25f4" />
+                        <ActivityIndicator size="large" color="#ff9066" />
                         <Text style={{ color: 'rgba(255, 255, 255, 0.4)', marginTop: 16 }}>Revisando posts...</Text>
                     </View>
                 ) : listings.length > 0 ? (
@@ -84,7 +84,7 @@ export default function AdminListingsScreen() {
                         {listings.map((p) => (
                             <View key={p.id} style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: 16, borderRadius: 28, borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)', flexDirection: 'row' }}>
                                 <Image 
-                                    source={{ uri: p.thumbnailUrl || p.imageUrls?.[0] }} 
+                                    source={{ uri: p.thumbnailUrl || (p.imageUrls && p.imageUrls[0]) || p.videoUrl }} 
                                     style={{ width: 80, height: 80, borderRadius: 20 }} 
                                     contentFit="cover"
                                 />

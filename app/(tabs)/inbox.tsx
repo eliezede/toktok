@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Dimensions, FlatList, SafeAreaView, StatusBar } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, FlatList, SafeAreaView, StatusBar } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -61,13 +62,14 @@ export default function InboxScreen() {
     ];
 
     const renderListingItem = ({ item }: { item: PropertyListing }) => (
-        <TouchableOpacity 
+        <TouchableOpacity
             style={styles.suggestionCard}
             onPress={() => router.push(`/property/${item.id}`)}
         >
-            <Image 
-                source={{ uri: item.thumbnailUrl || item.videoUrl }} 
+            <Image
+                source={{ uri: item.thumbnailUrl || (item.imageUrls && item.imageUrls[0]) || item.videoUrl }}
                 style={styles.suggestionImage}
+                contentFit="cover"
             />
             <LinearGradient
                 colors={['transparent', 'rgba(0,0,0,0.8)']}
@@ -92,7 +94,7 @@ export default function InboxScreen() {
         >
             <View style={styles.avatarWrapper}>
                 {item.profileImage ? (
-                    <Image source={{ uri: item.profileImage }} style={styles.agentAvatar} />
+                    <Image source={{ uri: item.profileImage }} style={styles.agentAvatar} contentFit="cover" />
                 ) : (
                     <View style={[styles.agentAvatar, { backgroundColor: '#ff9066', justifyContent: 'center', alignItems: 'center' }]}>
                         <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>{item.fullName.charAt(0)}</Text>

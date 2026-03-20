@@ -4,13 +4,15 @@ import { PropertyQueryService } from '@/services/property/propertyQueryService';
 import { PropertyListing } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useFocusEffect, router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Dimensions, FlatList, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View, ViewToken, Animated } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 
-const { height: WINDOW_HEIGHT, width: WINDOW_WIDTH } = Dimensions.get('window');
+const { height: DEVICE_HEIGHT, width: WINDOW_WIDTH } = Dimensions.get('window');
+const WINDOW_HEIGHT = Platform.OS === 'web' && DEVICE_HEIGHT > 768 ? Math.min(DEVICE_HEIGHT * 0.95, 900) : DEVICE_HEIGHT;
 
 import { useFeed } from '@/context/FeedContext';
 
@@ -98,10 +100,23 @@ export default function HomeScreen() {
 
   if (loading && !refreshing) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <LinearGradient
+        colors={['#0e0e0e', '#0e0e0e']}
+        style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}
+      >
         <ActivityIndicator size="large" color="#ff9066" />
-        <Text style={{ color: 'white', marginTop: 20, fontFamily: 'PlusJakartaSans-Bold', letterSpacing: 2, fontSize: 12, textTransform: 'uppercase' }}>Discovering Luxury</Text>
-      </View>
+        <Text style={{ 
+          color: 'white', 
+          marginTop: 24, 
+          fontFamily: 'PlusJakartaSans-Bold', 
+          letterSpacing: 4, 
+          fontSize: 10, 
+          textTransform: 'uppercase',
+          opacity: 0.8
+        }}>
+          Descobrindo o Luxo
+        </Text>
+      </LinearGradient>
     );
   }
 
@@ -125,17 +140,21 @@ export default function HomeScreen() {
         onRefresh={onRefresh}
         refreshing={refreshing}
         decelerationRate="fast"
-        snapToInterval={WINDOW_HEIGHT}
+        snapToInterval={WINDOW_HEIGHT} // Match the dynamic item height
         snapToAlignment="start"
         initialNumToRender={2}
         windowSize={3}
         onScrollBeginDrag={hideHeader}
         onMomentumScrollEnd={showHeader}
         ListEmptyComponent={
-          <View style={{ height: WINDOW_HEIGHT, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }}>
+          <View style={{ height: WINDOW_HEIGHT - 100, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }}>
             <Ionicons name="videocam-outline" size={64} color="rgba(255, 144, 102, 0.3)" />
-            <Text style={{ color: 'white', fontSize: 24, fontFamily: 'PlusJakartaSans-Bold', textAlign: 'center', marginTop: 20 }}>NO TOURS YET</Text>
-            <Text style={{ color: 'rgba(255, 255, 255, 0.5)', textAlign: 'center', marginTop: 10, fontFamily: 'Manrope-Regular' }}>Be the first to post a luxury property tour.</Text>
+            <Text style={{ color: 'white', fontSize: 20, fontFamily: 'PlusJakartaSans-Bold', textAlign: 'center', marginTop: 24, letterSpacing: 1 }}>
+              SEM TOURS AINDA
+            </Text>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.5)', textAlign: 'center', marginTop: 12, fontFamily: 'Manrope-Regular', fontSize: 14 }}>
+              Seja o primeiro a postar um tour de imóvel de luxo.
+            </Text>
           </View>
         }
       />
@@ -177,11 +196,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1c1022',
+    backgroundColor: '#0e0e0e',
   },
   topNavContainer: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 50,
+    top: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 20 : 50),
     width: WINDOW_WIDTH,
     zIndex: 10,
   },
